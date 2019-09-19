@@ -1,0 +1,57 @@
+<div class="chatcontent">
+    <div class="chatbox">
+      <div id="myChat" class="collapse well">
+          <div class="output"></div>
+          <input type="text" class="mt-1 form-control messageInputUser">
+      </div>
+      <button type="button" class="btn btn-dark userMsgBtn" data-toggle="collapse" data-target="#myChat">Live chat</button>
+    </div>
+    <div class="input-group namebox">
+      <input type="text" class="form-control userName" placeholder="Chat">
+      <div class="input-group-btn">
+        <button class="btn btn-dark startChat" type="submit">Enter your name</button>
+      </div>
+    </div>
+</div>
+
+<script>      
+    var myChat = $('#myChat');
+    var chat = io('http://127.0.0.1:3000/chat');
+
+    $(document).on('click', '.startChat',  function(e){
+      var name  = $('.userName').val();
+      chat.emit('setusername', name);
+      $('.namebox').hide('fast');
+      $('.chatbox').show('slow');
+      $('.userName').val('');
+    });
+
+    chat.on('enterUser', function (newUser) {
+      if(newUser.isAdminConnected){
+        myChat.find('.output').append(` <p><b>Admin</b>: Hey ${newUser.name}. Can I help you?</p>`);
+      }else{
+        myChat.find('.output').append(` <p><b>Admin</b>: Hey ${newUser.name}. We dont have admin online for now. Stay around and we will catch you as soon as possible, or just try to connect later.</p>`);
+      }
+      $('.userMsgBtn').attr('data-name', newUser.name)
+      myChat.collapse('toggle');
+    });
+    
+    chat.on('adminChatToUser', function (data) {
+        $('#myChat').find('.output').append(` <p><b>Admin</b>: ${data.message} </p>`);
+        var myDiv = document.getElementsByClassName("output")[0];
+        myDiv.scrollTop = 99999999;
+    });
+    
+    $(document).on('keypress', '.messageInputUser',  function(e){
+        if(e.which == 13){
+            var name = $('.userMsgBtn').attr('data-name')
+            var message = $(this).val();
+            myChat.find('.output').append(`<p><b>${name}</b>: ${message} </p>`);
+            myChat.find('input').val('')
+            chat.emit('chatToAdmin', { message: message, });
+            var myDiv = document.getElementsByClassName("output")[0];
+            myDiv.scrollTop = 99999999;
+        }
+    });
+
+</script>
